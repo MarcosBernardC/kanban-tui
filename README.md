@@ -2,7 +2,7 @@
 
 Un tablero Kanban minimalista, ultra-rápido y elegante desarrollado nativamente para la terminal. Construido en Python utilizando el framework **Textual**, pensado para desarrolladores y entusiastas de la eficiencia que viven en la línea de comandos.
 
-Para un repositorio impecable, recuerda colocar tu captura en `assets/kanban-screenshot.png`.
+#Para un repositorio impecable, recuerda colocar tu captura en `assets/kanban-screenshot.png`.
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.14+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python Version" />

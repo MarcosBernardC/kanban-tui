@@ -1,0 +1,22 @@
+{
+  "id": "13",
+  "title": "Kanban-TUI",
+  "category": "Productivity",
+  "visibility": "PUBLIC",
+  "domain": ["SOFT"],
+  "status": {
+    "state": "ACTIVE LABS",
+    "label": "Production-Ready"
+  },
+  "environment": {
+    "os": "Fedora 43",
+    "shell": "fish",
+    "last_update": "2026-05-26 // 17:24 PET"
+  },
+  "links": {
+    "ssh": "git@github.com:MarcosBernardC/kanban-tui",
+    "https": "https://github.com/MarcosBernardC/kanban-tui"
+  },
+  "stack": ["Python 3.14", "Textual", "JSON", "CLI"],
+  "description": "Gestor de tareas Kanban interactivo basado en terminal, con navegación estilo Vim y persistencia local de datos."
+}
