@@ -1,81 +1,92 @@
-# 🛰️ KANBAN TUI
+# 🛰️ Kanban TUI
 
-Un tablero Kanban interactivo para la terminal, minimalista, ultra ligero y de alto rendimiento. Construido nativamente en Python usando `curses`, sincronizado automáticamente con el fondo nativo de tu terminal y optimizado con una paleta de colores extendida de 256 tonos.
+Un tablero Kanban minimalista, ultra-rápido y elegante desarrollado nativamente para la terminal. Construido en Python utilizando el framework **Textual**, pensado para desarrolladores y entusiastas de la eficiencia que viven en la línea de comandos.
+
+Para un repositorio impecable, recuerda colocar tu captura en `assets/kanban-screenshot.png`.
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.14+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python Version" />
+  <img src="https://img.shields.io/badge/UIFramework-Textual-005F73?style=for-the-badge&logo=terminal&logoColor=white" alt="Textual" />
+  <img src="https://img.shields.io/badge/License-MIT-FFB703?style=for-the-badge" alt="License" />
+  <img src="https://img.shields.io/badge/Environment-Linux%20%2F%20Fedora-E94560?style=for-the-badge&logo=fedora&logoColor=white" alt="OS" />
+</p>
+
+---
+
+![Kanban TUI Screenshot](assets/kanban-screenshot.png)
 
 ## ✨ Características
 
-- **Diseño Nativo Eficiente:** Funciona directamente sobre el buffer de tu terminal sin dependencias externas pesadas ni entornos complejos.
-- **Paleta de Colores Curada:** Sintonizado específicamente para terminales con un flujo de maduración visual armónico (`104` Morado/Rosa Pastel para TODO, `12` Celeste Foco para DOING, y `107` Verde Menta para DONE).
-- **Persistencia de Datos Atómica:** Estado guardado en un archivo local plano `kanban.json` que se actualiza en tiempo real con cada interacción.
-- **Navegación Fluida:** Atajos de teclado intuitivos inspirados en los movimientos nativos de Vim (`h`, `j`, `k`, `l`).
+- **Diseño Modular de Tres Columnas:** Visualiza tus flujos de trabajo de manera limpia en columnas `TODO`, `DOING` y `DONE`.
+- **Numeración Cronológica Inteligente:** Olvídate de los complejos IDs globales. La TUI ordena automáticamente las tareas por fecha de creación y muestra un índice local dinámico (`[1]`, `[2]`, `[3]`).
+- **Vista de Detalle e Inspección:** Presiona `Enter` para abrir un modal elegante con metadatos completos de la tarea (fecha, hora y columna actual).
+- **Edición en Caliente:** Modifica el texto de tus tareas directamente desde el diálogo de inspección sin interrumpir tu flujo de trabajo.
+- **Salida Segura:** Evita cierres accidentales mediante un diálogo clásico de confirmación de salida.
+- **Persistencia Local Robusta:** Los datos se guardan automáticamente en un archivo `kanban.json` estructurado, incluyendo migración transparente desde formatos antiguos.
 
-## 🛠️ Requisitos e Instalación
+## 🚀 Instalación y Uso
 
-### Requisitos
-- Python 3.x
-- Módulo nativo `curses` (incluido por defecto en sistemas Unix como Fedora, CachyOS, Ubuntu, macOS).
+### 1. Clonar el repositorio
+```bash
+git clone [https://github.com/tu-usuario/kanban-tui.git](https://github.com/tu-usuario/kanban-tui.git)
+cd kanban-tui
+```
 
-### Instalación
-1. Clona este repositorio o copia el archivo ejecutable en tu directorio de herramientas locales:
-   ```bash
-   git clone git@github.com:MarcosBernardC/kanban-tui.git
-   cd kanban-tui
+### 2. Configurar el entorno virtual (Recomendado)
 
-2. Asegúrate de que el script tenga permisos de ejecución:
-	Bash
-    ```
-    chmod +x kanban.py
-    ```
+Bash
 
-## 🎮 Modo de Uso
+```
+python3 -m venv .venv
+source .venv/bin/activate  # En Linux/Fedora
+```
 
-Lanza la interfaz ejecutando directamente el script:
-    ```bash
-    ./kanban.py
-    ```
+### 3. Instalar dependencias
 
-### Atajos de Teclado (Navegación e Interacción)
+Bash
+
+```
+pip install -r requirements.txt
+```
+
+### 4. Lanzar la aplicación
+
+Bash
+
+```
+./kanban.py
+```
+
+## ⌨️ Atajos de Teclado (Keybindings)
+
+### Tablero Principal
+
+| **Tecla**     | **Acción**                                                   |
+| ------------- | ------------------------------------------------------------ |
+| `q`           | Abrir diálogo de salida                                      |
+| `a`           | Añadir una nueva tarea                                       |
+| `Enter` / `e` | Ver detalle e inspeccionar tarea activa                      |
+| `d` / `x`     | Eliminar tarea activa                                        |
+| `m`           | Mover tarea a la siguiente columna (`TODO` ➔ `DOING` ➔ `DONE`) |
+| `🠔` / `h`     | Navegar a la columna izquierda                               |
+| `🠖` / `l`     | Navegar a la columna derecha                                 |
+| `🠗` / `j`     | Desplazar foco hacia abajo                                   |
+| `🠕` / `k`     | Desplazar foco hacia arriba                                  |
+
+### Ventanas Modales (Detalle / Salida)
 
 | **Tecla**   | **Acción**                                                   |
 | ----------- | ------------------------------------------------------------ |
-| `h` / `←`   | Moverse a la columna de la izquierda.                        |
-| `l` / `→`   | Moverse a la columna de la derecha.                          |
-| `j` / `↓`   | Desplazar el cursor hacia abajo en la lista de tareas.       |
-| `k` / `↑`   | Desplazar el cursor hacia arriba en la lista de tareas.      |
-| `a`         | **Añadir** una nueva tarea en la columna `TODO`.             |
-| `e`         | **Editar** el texto de la tarea actualmente seleccionada.    |
-| `m`         | **Mover** (ciclar) la tarea seleccionada a la siguiente columna (`TODO` ➔ `DOING` ➔ `DONE`). |
-| `q` / `ESC` | **Salir** de la aplicación con gracia conservando el estado del terminal. |
+| `q` / `Esc` | Cerrar el modal / Cancelar acción                            |
+| `e`         | Activar edición de texto (Solo en el detalle de la tarea)    |
+| `Enter`     | Confirmar guardado de texto / Confirmar salida de la aplicación |
 
-## 🗄️ Estructura de Almacenamiento
+## 🛠️ Tecnologías Utilizadas
 
-El programa autogenera un archivo plano `kanban.json` en el mismo directorio con una estructura limpia estructurada por índices indexables:
+- **Python 3.14+**
+- **Textual** (Framework para interfaces de terminal enriquecidas)
+- **JSON** (Almacenamiento e intercambio de datos)
 
-JSON
+## 📄 Licencia
 
-```json
-{
-    "next_id": 2,
-    "TODO": {},
-    "DOING": {
-        "1": "hola"
-    },
-    "DONE": {}
-}
-```
-
-## 🎨 Personalización Visual
-
-Si deseas experimentar con otros tonos de la terminal, puedes modificar las líneas de inicialización de color dentro de `kanban.py` usando cualquier código de escape de la paleta de 256 colores:
-
-Python
-
-```python
-curses.init_pair(1, 104, -1) # Columna TODO
-curses.init_pair(2, 12, -1)  # Columna DOING
-curses.init_pair(3, 107, -1) # Columna DONE
-```
-
-## 📝 Licencia
-
-Este proyecto es de uso personal bajo la filosofía de software libre "Haz lo que quieras con él" (MIT/WTFPL). Creado para potenciar el estado de flujo diario desde la línea de comandos.
+Este proyecto está bajo la Licencia MIT. ¡Siéntete libre de clonarlo, modificarlo y adaptarlo a tus flujos de trabajo diarios!
