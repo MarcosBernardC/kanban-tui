@@ -41,7 +41,7 @@ class ConfirmacionModal(ModalScreen):
         super().__init__()
         self.mensaje = mensaje
     def compose(self) -> ComposeResult:
-        yield Vertical(Label(self.mensaje), Label("[b]S[/]: Guardar | [b]N[/]: Volver a editar"), id="modal-box")
+        yield Vertical(Label(self.mensaje), Label("[b]S[/]: Sí | [b]N[/]: No"), id="modal-box")
     def action_confirmar(self): self.dismiss(True)
     def action_cancelar(self): self.dismiss(False)
 
@@ -262,12 +262,39 @@ class KanbanApp(App):
         Binding("L", "move_task_right", "Mover →", show=False),
 
         Binding("a", "añadir_tarea", "Añadir"),
+        Binding("d", "delete_task", "Borrar", show=True),
     ]
 
     def __init__(self):
         super().__init__()
         self.columnas = ["TODO", "DOING", "DONE"]
         self.col_idx = 0
+    
+    def action_delete_task(self):
+        focused = self.screen.focused
+        if not isinstance(focused, TareaItem):
+            return
+
+        def confirmar_borrado(confirmado):
+            if confirmado:
+                data = cargar_datos()
+                col = focused.columna
+                tid = int(focused.tid) # Convertimos a int para comparar
+                
+                # Eliminamos la tarea
+                if str(tid) in data[col]:
+                    del data[col][str(tid)]
+                    
+                    # Lógica para ajustar next_id
+                    # Solo restamos si el ID eliminado era el último creado (next_id - 1)
+                    if tid == data["next_id"] - 1:
+                        data["next_id"] -= 1
+                    
+                    guardar_datos(data)
+                    self.actualizar_tablero()
+                    self.notify(f"Tarea {tid} eliminada y next_id actualizado")
+
+        self.push_screen(ConfirmacionModal(f"¿Borrar tarea #{focused.tid}?"), confirmar_borrado)
     
     def action_añadir_tarea(self):
         def procesar_nueva_tarea(texto):
