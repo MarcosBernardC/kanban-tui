@@ -1,8 +1,6 @@
 # 🛰️ Kanban TUI
 
-Un tablero Kanban minimalista, ultra-rápido y elegante desarrollado nativamente para la terminal. Construido en Python utilizando el framework **Textual**, pensado para desarrolladores y entusiastas de la eficiencia que viven en la línea de comandos.
-
-#Para un repositorio impecable, recuerda colocar tu captura en `assets/kanban-screenshot.png`.
+Un tablero Kanban minimalista, de alta velocidad y rendimiento, diseñado para ejecutarse nativamente en la terminal. Construido en Python bajo el framework **Textual**, esta TUI está optimizada para desarrolladores que priorizan la eficiencia y el control mediante el teclado.
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.14+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python Version" />
@@ -11,49 +9,44 @@ Un tablero Kanban minimalista, ultra-rápido y elegante desarrollado nativamente
   <img src="https://img.shields.io/badge/Environment-Linux%20%2F%20Fedora-E94560?style=for-the-badge&logo=fedora&logoColor=white" alt="OS" />
 </p>
 
----
+## ✨ Características Principales
 
-![Kanban TUI Screenshot](assets/kanban-screenshot.png)
+- **Interfaz Basada en Modos:** Navegación fluida inspirada en Vim para gestionar tareas sin tocar el mouse.
+- **Gestión de Flujo (Vim-Style):**
+  - **Reordenamiento:** Usa `J` y `K` para ajustar la prioridad de tareas en tiempo real.
+  - **Transferencia:** Usa `H` y `L` para migrar tareas entre estados (`TODO` ➔ `DOING` ➔ `DONE`) instantáneamente.
+- **Persistencia Atómica:** Datos gestionados mediante `kanban.json` con auto-guardado seguro a través de comandos internos (`:w`, `:wq`).
+- **Inspección Profunda:** Modal de edición con modo *Insertar* y *Normal*, brindando un control preciso sobre el contenido de tus tareas.
 
-## ✨ Características
-
-- **Diseño Modular de Tres Columnas:** Visualiza tus flujos de trabajo de manera limpia en columnas `TODO`, `DOING` y `DONE`.
-- **Numeración Cronológica Inteligente:** Olvídate de los complejos IDs globales. La TUI ordena automáticamente las tareas por fecha de creación y muestra un índice local dinámico (`[1]`, `[2]`, `[3]`).
-- **Vista de Detalle e Inspección:** Presiona `Enter` para abrir un modal elegante con metadatos completos de la tarea (fecha, hora y columna actual).
-- **Edición en Caliente:** Modifica el texto de tus tareas directamente desde el diálogo de inspección sin interrumpir tu flujo de trabajo.
-- **Salida Segura:** Evita cierres accidentales mediante un diálogo clásico de confirmación de salida.
-- **Persistencia Local Robusta:** Los datos se guardan automáticamente en un archivo `kanban.json` estructurado, incluyendo migración transparente desde formatos antiguos.
-
-## 🚀 Instalación y Uso
+## 🚀 Instalación y Ejecución
 
 ### 1. Clonar el repositorio
-```bash
-git clone [https://github.com/tu-usuario/kanban-tui.git](https://github.com/tu-usuario/kanban-tui.git)
+
+Bash
+
+```
+git clone https://github.com/MarcosBernardC/kanban-tui
 cd kanban-tui
 ```
 
-### 2. Configurar el entorno virtual (Recomendado)
+### 2. Configurar entorno
 
 Bash
 
 ```
 python3 -m venv .venv
-source .venv/bin/activate  # En Linux/Fedora
-```
-
-### 3. Instalar dependencias
-
-Bash
-
-```
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. Lanzar la aplicación
+### 3. Lanzar la aplicación
+
+Puedes ejecutarla directamente o darle permisos de ejecución:
 
 Bash
 
 ```
+chmod +x kanban.py
 ./kanban.py
 ```
 
@@ -61,32 +54,34 @@ Bash
 
 ### Tablero Principal
 
-| **Tecla**     | **Acción**                                                   |
-| ------------- | ------------------------------------------------------------ |
-| `q`           | Abrir diálogo de salida                                      |
-| `a`           | Añadir una nueva tarea                                       |
-| `Enter` / `e` | Ver detalle e inspeccionar tarea activa                      |
-| `d` / `x`     | Eliminar tarea activa                                        |
-| `m`           | Mover tarea a la siguiente columna (`TODO` ➔ `DOING` ➔ `DONE`) |
-| `🠔` / `h`     | Navegar a la columna izquierda                               |
-| `🠖` / `l`     | Navegar a la columna derecha                                 |
-| `🠗` / `j`     | Desplazar foco hacia abajo                                   |
-| `🠕` / `k`     | Desplazar foco hacia arriba                                  |
+| **Tecla** | **Acción**                      |
+| --------- | ------------------------------- |
+| `q`       | Salir de la aplicación          |
+| `a`       | Añadir nueva tarea              |
+| `d`       | Eliminar tarea activa           |
+| `Enter`   | Entrar en modo edición de tarea |
+| `h` / `l` | Mover foco entre columnas       |
+| `j` / `k` | Desplazar foco verticalmente    |
+| `H` / `L` | Mover tarea entre columnas      |
+| `J` / `K` | Reordenar tarea (arriba/abajo)  |
 
-### Ventanas Modales (Detalle / Salida)
+### Modo Edición (Modales)
 
-| **Tecla**   | **Acción**                                                   |
-| ----------- | ------------------------------------------------------------ |
-| `q` / `Esc` | Cerrar el modal / Cancelar acción                            |
-| `e`         | Activar edición de texto (Solo en el detalle de la tarea)    |
-| `Enter`     | Confirmar guardado de texto / Confirmar salida de la aplicación |
+| **Tecla** | **Acción**                |
+| --------- | ------------------------- |
+| `i`       | Entrar en modo insertar   |
+| `Esc`     | Volver a modo normal      |
+| `:`       | Activar línea de comandos |
+| `:w`      | Guardar cambios           |
+| `:wq`     | Guardar y cerrar modal    |
+| `:q`      | Cerrar sin guardar        |
 
-## 🛠️ Tecnologías Utilizadas
+## 🛠️ Tecnologías
 
 - **Python 3.14+**
-- **Textual** (Framework para interfaces de terminal enriquecidas)
-- **JSON** (Almacenamiento e intercambio de datos)
+- **Textual:** Framework para TUI enriquecida.
+- **JSON:** Capa de persistencia local.
 
 ## 📄 Licencia
 
-Este proyecto está bajo la Licencia MIT. ¡Siéntete libre de clonarlo, modificarlo y adaptarlo a tus flujos de trabajo diarios!
+MIT. Adaptado para flujos de trabajo de ingeniería de software.
