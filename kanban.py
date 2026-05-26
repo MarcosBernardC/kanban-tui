@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
-import curses
 import json
 import os
+from textual.app import App, ComposeResult
+from textual.containers import Horizontal, Vertical, VerticalScroll
+from textual.widgets import Header, Footer, Static, Label, Input
+from textual.binding import Binding
 
 DATA_FILE = "kanban.json"
 DEFAULT_DATA = {"next_id": 1, "TODO": {}, "DOING": {}, "DONE": {}}
@@ -18,126 +21,262 @@ def guardar_datos(data):
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=4)
 
-def dibujar_interfaz(stdscr):
-    # Configuración inicial de curses
-    curses.curs_set(0)  # Ocultar cursor físico
-    stdscr.keypad(True) # Habilitar flechas de dirección y teclas especiales
-    
-    # Sincronizar con el fondo nativo claro/transparente de tu terminal
-    curses.use_default_colors()
-    
-    # Inicialización de pares usando tus índices seleccionados de la paleta
-    curses.init_pair(1, 104, -1) # TODO  -> Morado/Rosa Pastel
-    curses.init_pair(2, 12, -1)  # DOING -> Celeste Claro / Foco
-    curses.init_pair(3, 107, -1) # DONE  -> Verde Menta / Apagado
+class TareaItem(Static):
+    """Widget de tarea interactivo simplificado."""
+    can_focus = True  
 
-    columnas = ["TODO", "DOING", "DONE"]
-    col_activa = 0
-    idx_tarea_activa = 0
+    def __init__(self, tid: str, texto: str, columna: str, **kwargs):
+        super().__init__(**kwargs)
+        self.tid = tid
+        self.texto = texto
+        self.columna = columna
 
-    while True:
-        stdscr.clear()
+    def compose(self) -> ComposeResult:
+        yield Label(f"[b][#7cfc00][{self.tid}][/][/b] {self.texto}")
+
+class KanbanApp(App):
+    TITLE = "🛰️ KANBAN TUI"
+    
+    CSS = """
+    Screen {
+        background: transparent;
+    }
+    Horizontal {
+        height: 1fr;
+        margin: 0;
+    }
+    .columna-contenedor {
+        width: 1fr;
+        height: 1fr;
+        border: solid $primary-darken-1;
+        margin: 0 1;
+        padding: 0 1;
+        background: transparent;
+    }
+    .col-title {
+        text-align: center;
+        text-style: bold;
+        background: $primary-darken-3;
+        color: $text;
+        margin: 1 0;
+        height: 3;
+        content-align: center middle;
+    }
+    #todo-col { border: solid #6c71c4; }
+    #doing-col { border: solid #268bd2; }
+    #done-col { border: solid #859900; }
+    
+    .lista-tareas {
+        height: 1fr;
+        overflow-y: scroll;
+    }
+    
+    TareaItem {
+        background: $surface;
+        margin: 0 0 1 0;
+        padding: 0 1;
+        border: solid $primary-darken-2;
+        height: auto;
+    }
+    TareaItem:focus {
+        border: double #268bd2;
+        background: $primary-darken-2;
+    }
+    
+    Input {
+        margin: 1 1 0 1;
+        border: tall #6c71c4;
+        dock: bottom;
+    }
+    """
+
+    BINDINGS = [
+        Binding("q", "quit", "Salir", show=True),
+        Binding("a", "add_task", "Añadir", show=True),
+        Binding("e", "edit_task", "Editar", show=True),
+        Binding("d,x", "delete_task", "Eliminar", show=True),
+        Binding("m", "move_task", "Mover Col.", show=True),
+        Binding("left,h", "move_left", "Col. Izquierda", show=False),
+        Binding("right,l", "move_right", "Col. Derecha", show=False),
+        Binding("down,j", "move_down", "Bajar Tarea", show=False),
+        Binding("up,k", "move_up", "Subir Tarea", show=False),
+    ]
+
+    def compose(self) -> ComposeResult:
+        yield Header(show_clock=True)
+        with Horizontal():
+            with Vertical(id="todo-col", classes="columna-contenedor"):
+                yield Static("❯ TODO (0)", classes="col-title", id="title-todo")
+                with VerticalScroll(id="tasks-todo", classes="lista-tareas"):
+                    pass
+            with Vertical(id="doing-col", classes="columna-contenedor"):
+                yield Static("❯ DOING (0)", classes="col-title", id="title-doing")
+                with VerticalScroll(id="tasks-doing", classes="lista-tareas"):
+                    pass
+            with Vertical(id="done-col", classes="columna-contenedor"):
+                yield Static("❯ DONE (0)", classes="col-title", id="title-done")
+                with VerticalScroll(id="tasks-done", classes="lista-tareas"):
+                    pass
+        yield Input(placeholder="Escribe la tarea...", id="input-nueva-tarea")
+        yield Footer()
+
+    def on_mount(self) -> None:
+        self.columnas_lista = ["todo", "doing", "done"]
+        self.col_activa_idx = 0
+        self.tarea_activa_idx = 0 
+        self.tarea_en_edicion = None  
+        
+        self.actualizar_interfaz()
+        self.query_one("#input-nueva-tarea", Input).visible = False
+
+    def actualizar_interfaz(self, select_tid: str = None) -> None:
         data = cargar_datos()
         
-        # Mapear tareas de la columna actual a una lista indexable
-        tareas_col_actual = list(data[columnas[col_activa]].items())
-        
-        # Ajustar el índice activo si la lista cambia de tamaño dinámicamente
-        if idx_tarea_activa >= len(tareas_col_actual):
-            idx_tarea_activa = max(0, len(tareas_col_actual) - 1)
+        self.query_one("#title-todo", Static).update(f"❯ TODO ({len(data['TODO'])})")
+        self.query_one("#title-doing", Static).update(f"❯ DOING ({len(data['DOING'])})")
+        self.query_one("#title-done", Static).update(f"❯ DONE ({len(data['DONE'])})")
 
-        # 1. Dibujar Encabezado principal
-        stdscr.addstr(0, 2, "🛰️  KANBAN TUI", curses.A_BOLD)
-        stdscr.addstr(1, 2, "─" * 50)
+        target_widget = None
 
-        # 2. Dibujar las Columnas laterales
-        for idx_col, col in enumerate(columnas):
-            x_pos = 2 + (idx_col * 24)
+        for col_name in self.columnas_lista:
+            container = self.query_one(f"#tasks-{col_name}", VerticalScroll)
+            container.query(TareaItem).remove()
             
-            # Aplicar color base con brillo (A_BOLD) para ganar consistencia visual
-            attr = curses.color_pair(idx_col + 1) | curses.A_BOLD
-            
-            # Subrayar el título si estamos parados en esa columna
-            if idx_col == col_activa:
-                attr |= curses.A_UNDERLINE
-            
-            stdscr.addstr(3, x_pos, f"❯ {col} ({len(data[col])})", attr)
-
-            # Dibujar cada una de las tareas de la columna
-            for idx_t, (tid, txt) in enumerate(data[col].items()):
-                y_pos = 5 + idx_t
-                display_str = f"[{tid}] {txt[:18]}"
+            for tid, txt in data[col_name.upper()].items():
+                item = TareaItem(tid, txt, col_name.upper())
+                container.mount(item)
                 
-                # Elemento seleccionado bajo el cursor interactivo
-                if idx_col == col_activa and idx_t == idx_tarea_activa:
-                    attr_seleccionado = curses.color_pair(idx_col + 1) | curses.A_REVERSE | curses.A_BOLD
-                    stdscr.addstr(y_pos, x_pos, f" {display_str} ", attr_seleccionado)
-                else:
-                    # Texto normal en reposo
-                    attr_normal = curses.color_pair(idx_col + 1) | curses.A_BOLD
-                    stdscr.addstr(y_pos, x_pos, f"  {display_str}", attr_normal)
+                # Si es la tarea que queremos seleccionar explícitamente, guardamos la referencia
+                if select_tid and select_tid == tid:
+                    target_widget = item
+                    # Sincronizamos las coordenadas internas de la App
+                    self.col_activa_idx = self.columnas_lista.index(col_name)
+                    tareas_en_col = list(data[col_name.upper()].keys())
+                    self.tarea_activa_idx = tareas_en_col.index(tid)
 
-        # 3. Dibujar Barra de Guía inferior
-        stdscr.addstr(18, 2, "─" * 70)
-        stdscr.addstr(19, 2, "[h/l/⇄] Columnas  |  [j/k/⇅] Tareas  |  [a] Añadir  |  [e] Editar  |  [m] Mover  |  [q] Salir", curses.A_DIM)
+        # Usamos call_after_refresh para asegurar que Textual renderizó los nuevos elementos antes de enfocar
+        if target_widget:
+            self.call_after_refresh(target_widget.focus)
+        else:
+            self.call_after_refresh(self._refrescar_foco)
 
-        stdscr.refresh()
-
-        # 4. Captura del teclado de un solo toque
-        key = stdscr.getch()
-
-        if key in [ord('q'), 27]: # 'q' o ESC para salir con gracia
-            break
+    def _refrescar_foco(self) -> None:
+        """Enfoca la tarea correspondiente según las coordenadas actuales de forma segura."""
+        col_name = self.columnas_lista[self.col_activa_idx]
+        container = self.query_one(f"#tasks-{col_name}", VerticalScroll)
+        tareas = list(container.query(TareaItem))
         
-        elif key in [ord('l'), curses.KEY_RIGHT]: # Navegar a la Derecha
-            col_activa = (col_activa + 1) % 3
-            idx_tarea_activa = 0
-            
-        elif key in [ord('h'), curses.KEY_LEFT]: # Navegar a la Izquierda
-            col_activa = (col_activa - 1) % 3
-            idx_tarea_activa = 0
-            
-        elif key in [ord('j'), curses.KEY_DOWN] and tareas_col_actual: # Bajar cursor
-            idx_tarea_activa = (idx_tarea_activa + 1) % len(tareas_col_actual)
-            
-        elif key in [ord('k'), curses.KEY_UP] and tareas_col_actual: # Subir cursor
-            idx_tarea_activa = (idx_tarea_activa - 1) % len(tareas_col_actual)
+        if tareas:
+            self.tarea_activa_idx = min(self.tarea_activa_idx, len(tareas) - 1)
+            if self.tarea_activa_idx < 0:
+                self.tarea_activa_idx = 0
+            tareas[self.tarea_activa_idx].focus()
+        else:
+            self.tarea_activa_idx = 0
+            # Si la columna está vacía, mantenemos el foco en un lugar seguro para no perder el teclado
+            container.focus()
 
-        elif key == ord('a'): # [a] Añadir Tarea
-            curses.echo()
-            curses.curs_set(1)
-            stdscr.addstr(21, 2, "📝 Nueva tarea:                                       ")
-            stdscr.move(21, 16)
-            texto = stdscr.getstr().decode('utf-8')
-            if texto.strip():
+    # --- NAVEGACIÓN ---
+
+    def action_move_left(self) -> None:
+        if self.col_activa_idx > 0:
+            self.col_activa_idx -= 1
+            self._refrescar_foco()
+
+    def action_move_right(self) -> None:
+        if self.col_activa_idx < len(self.columnas_lista) - 1:
+            self.col_activa_idx += 1
+            self._refrescar_foco()
+
+    def action_move_down(self) -> None:
+        col_name = self.columnas_lista[self.col_activa_idx]
+        container = self.query_one(f"#tasks-{col_name}", VerticalScroll)
+        tareas = list(container.query(TareaItem))
+        if tareas and self.tarea_activa_idx < len(tareas) - 1:
+            self.tarea_activa_idx += 1
+            tareas[self.tarea_activa_idx].focus()
+
+    def action_move_up(self) -> None:
+        col_name = self.columnas_lista[self.col_activa_idx]
+        container = self.query_one(f"#tasks-{col_name}", VerticalScroll)
+        tareas = list(container.query(TareaItem))
+        if tareas and self.tarea_activa_idx > 0:
+            self.tarea_activa_idx -= 1
+            tareas[self.tarea_activa_idx].focus()
+
+    # --- ACCIONES INTERACTIVAS ---
+
+    def action_add_task(self) -> None:
+        self.tarea_en_edicion = None
+        input_widget = self.query_one("#input-nueva-tarea", Input)
+        input_widget.placeholder = "📝 Nueva tarea: Escribe y presiona Enter..."
+        input_widget.value = ""
+        input_widget.visible = True
+        input_widget.focus()
+
+    def action_edit_task(self) -> None:
+        focused_widget = self.focused
+        if isinstance(focused_widget, TareaItem):
+            self.tarea_en_edicion = focused_widget  
+            input_widget = self.query_one("#input-nueva-tarea", Input)
+            input_widget.placeholder = f"✏️ Editar tarea [{focused_widget.tid}]:"
+            input_widget.value = focused_widget.texto
+            input_widget.visible = True
+            input_widget.focus()
+
+    def action_delete_task(self) -> None:
+        focused_widget = self.focused
+        if isinstance(focused_widget, TareaItem):
+            data = cargar_datos()
+            data[focused_widget.columna].pop(focused_widget.tid)
+            guardar_datos(data)
+            
+            # Ajustamos el índice por si borramos el último elemento de la lista
+            if self.tarea_activa_idx > 0:
+                self.tarea_activa_idx -= 1
+                
+            self.actualizar_interfaz()
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        texto = event.value.strip()
+        if texto:
+            data = cargar_datos()
+            if self.tarea_en_edicion:
+                tid = self.tarea_en_edicion.tid
+                col = self.tarea_en_edicion.columna
+                data[col][tid] = texto
+                target_id = tid
+            else:
                 nuevo_id = str(data["next_id"])
                 data["TODO"][nuevo_id] = texto
                 data["next_id"] += 1
-                guardar_datos(data)
-            curses.noecho()
-            curses.curs_set(0)
+                target_id = nuevo_id
 
-        elif key == ord('e') and tareas_col_actual: # [e] Editar Texto de Tarea
-            tid, antiguo_texto = tareas_col_actual[idx_tarea_activa]
-            curses.echo()
-            curses.curs_set(1)
-            stdscr.addstr(21, 2, f"✏️ Editar: {antiguo_texto[:30]}... -> ")
-            stdscr.move(21, len(antiguo_texto[:30]) + 15)
-            nuevo_texto = stdscr.getstr().decode('utf-8')
-            if nuevo_texto.strip():
-                data[columnas[col_activa]][tid] = nuevo_texto
-                guardar_datos(data)
-            curses.noecho()
-            curses.curs_set(0)
-
-        elif key == ord('m') and tareas_col_actual: # [m] Ciclar Tarea a la Siguiente Columna
-            tid, txt = tareas_col_actual[idx_tarea_activa]
-            col_origen = columnas[col_activa]
-            col_destino = columnas[(col_activa + 1) % 3]
-            
-            data[col_origen].pop(tid)
-            data[col_destino][tid] = txt
             guardar_datos(data)
+            event.input.value = ""
+            event.input.visible = False
+            self.tarea_en_edicion = None
+            self.actualizar_interfaz(select_tid=target_id)
+        else:
+            event.input.visible = False
+            self.tarea_en_edicion = None
+            self.actualizar_interfaz()
+
+    def action_move_task(self) -> None:
+        focused_widget = self.focused
+        if isinstance(focused_widget, TareaItem):
+            tid = focused_widget.tid
+            col_actual = focused_widget.columna
+            
+            mapeo_siguiente = {"TODO": "DOING", "DOING": "DONE", "DONE": "TODO"}
+            col_destino = mapeo_siguiente[col_actual]
+            
+            data = cargar_datos()
+            texto_tarea = data[col_actual].pop(tid)
+            data[col_destino][tid] = texto_tarea
+            guardar_datos(data)
+            
+            self.actualizar_interfaz(select_tid=tid)
 
 if __name__ == "__main__":
-    curses.wrapper(dibujar_interfaz)
+    KanbanApp().run()
