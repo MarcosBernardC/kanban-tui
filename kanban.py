@@ -32,8 +32,12 @@ class TareaItem(Static):
         self.tid = tid
         self.info = info
         self.columna = col
+    
     def compose(self) -> ComposeResult:
+        # Extraemos la fecha con un valor por defecto si no existe
+        fecha = self.info.get('creado', 'sin fecha')
         yield Label(f"[b][{self.tid}][/b] {self.info['texto'][:20]}")
+        yield Label(f"[dim]{fecha}[/]", classes="fecha-label")
 
 class ConfirmacionModal(ModalScreen):
     BINDINGS = [Binding("s", "confirmar", "Sí"), Binding("n", "cancelar", "No")]
@@ -243,6 +247,12 @@ class KanbanApp(App):
     Footer > .footer--key {
         padding: 0 1; 
     }
+    .fecha-label {
+        text-align: right;
+        padding-right: 1;
+        width: 100%;
+        color: $text-muted;
+    }
     """
 
     BINDINGS = [
@@ -304,8 +314,14 @@ class KanbanApp(App):
                 data["next_id"] += 1
                 col_actual = self.columnas[self.col_idx]
                 
-                # Guardar en JSON
-                data[col_actual][tid] = {"texto": texto}
+                # Obtenemos fecha actual
+                fecha_actual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                
+                # Guardar en JSON incluyendo la clave "creado"
+                data[col_actual][tid] = {
+                    "texto": texto,
+                    "creado": fecha_actual
+                }
                 guardar_datos(data)
                 self.actualizar_tablero()
                 self.notify(f"Tarea {tid} añadida en {col_actual}")
