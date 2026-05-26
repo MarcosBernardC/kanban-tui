@@ -154,6 +154,64 @@ class AyudaModal(ModalScreen):
                          ":: Comandos (:w, :wq, :q)")
             yield Label("\nPresiona [b]Esc[/] o [b]q[/] para cerrar.")
 
+class NuevaTareaModal(ModalScreen):
+    BINDINGS = [
+        Binding("i", "insertar", "Insertar"),
+        Binding("escape", "modo_normal", "Normal"),
+        Binding("colon", "activar_comandos", ":"),
+        Binding("enter", "guardar_y_salir", "Guardar"),
+    ]
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="modal-box"):
+            yield Label("Nueva Tarea", id="modal-title")
+            self.text_area = TextArea(text="", id="edit-input")
+            self.text_area.read_only = True
+            yield self.text_area
+            
+            self.cmd_input = Input(placeholder=":", id="cmd-line")
+            self.cmd_input.display = False
+            yield self.cmd_input
+            
+            self.info_label = Label("-- NORMAL -- | i: Insertar | : Comandos")
+            yield self.info_label
+
+    def action_insertar(self):
+        self.text_area.read_only = False
+        self.text_area.focus()
+        self.info_label.update("-- INSERT -- | Esc: Normal")
+
+    def action_modo_normal(self):
+        self.text_area.read_only = True
+        self.cmd_input.display = False
+        self.cmd_input.value = "" # Limpiamos el input
+        self.info_label.update("-- NORMAL -- | i: Insertar | : Comandos")
+        self.text_area.focus()
+
+    def action_activar_comandos(self):
+        self.cmd_input.display = True
+        self.cmd_input.focus()
+        self.cmd_input.value = ""
+
+    def action_guardar_y_salir(self):
+        # Esta acción ahora es el núcleo del guardado
+        texto = self.text_area.text.strip()
+        if texto:
+            self.dismiss(texto) # Retorna el texto a la App principal
+        else:
+            self.dismiss(None)
+
+    def on_input_submitted(self, event: Input.Submitted):
+        if event.input.id == "cmd-line":
+            cmd = event.value.strip()
+            if cmd == "q":
+                self.dismiss(None)
+            elif cmd in ["w", "wq"]:
+                # :w y :wq funcionan igual aquí (guardan y cierran)
+                self.action_guardar_y_salir()
+            else:
+                self.action_modo_normal()
+
 class KanbanApp(App):
     CSS = """
     .columna-contenedor { width: 1fr; height: 100%; border: solid $primary; margin: 0 1; }
@@ -202,12 +260,30 @@ class KanbanApp(App):
         Binding("K", "move_task_up", "Mover ↑", show=False),
         Binding("H", "move_task_left", "Mover ←", show=False),
         Binding("L", "move_task_right", "Mover →", show=False),
+
+        Binding("a", "añadir_tarea", "Añadir"),
     ]
 
     def __init__(self):
         super().__init__()
         self.columnas = ["TODO", "DOING", "DONE"]
         self.col_idx = 0
+    
+    def action_añadir_tarea(self):
+        def procesar_nueva_tarea(texto):
+            if texto:
+                data = cargar_datos()
+                tid = str(data["next_id"])
+                data["next_id"] += 1
+                col_actual = self.columnas[self.col_idx]
+                
+                # Guardar en JSON
+                data[col_actual][tid] = {"texto": texto}
+                guardar_datos(data)
+                self.actualizar_tablero()
+                self.notify(f"Tarea {tid} añadida en {col_actual}")
+
+        self.push_screen(NuevaTareaModal(), procesar_nueva_tarea)
     
     def action_mostrar_paleta(self):
         # Puedes crear un modal simple que contenga un Input
