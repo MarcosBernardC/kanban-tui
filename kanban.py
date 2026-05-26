@@ -136,6 +136,24 @@ class EditarTareaModal(ModalScreen):
                 # Comando no reconocido, volvemos a modo normal
                 self.action_modo_normal()
 
+class AyudaModal(ModalScreen):
+    BINDINGS = [Binding("escape", "dismiss", "Cerrar"), Binding("q", "dismiss", "Cerrar")]
+    
+    def compose(self) -> ComposeResult:
+        with Vertical(id="modal-box"):
+            yield Label("[b]PANEL DE AYUDA[/b]", id="modal-title")
+            yield Static("--- NAVEGACIÓN ---\n"
+                         "h/j/k/l: Mover selección\n"
+                         "H/L: Mover tarea entre columnas\n"
+                         "J/K: Reordenar tarea arriba/abajo\n\n"
+                         "--- ACCIONES ---\n"
+                         "Enter: Editar tarea\n"
+                         "q: Salir de la app\n\n"
+                         "--- EN MODO EDICIÓN ---\n"
+                         "i: Insertar | Esc: Normal\n"
+                         ":: Comandos (:w, :wq, :q)")
+            yield Label("\nPresiona [b]Esc[/] o [b]q[/] para cerrar.")
+
 class KanbanApp(App):
     CSS = """
     .columna-contenedor { width: 1fr; height: 100%; border: solid $primary; margin: 0 1; }
@@ -152,24 +170,50 @@ class KanbanApp(App):
         padding: 0;
         height: 1;
     }
+    #modal-box Static {
+        padding: 1;
+        width: 100%;
+        text-align: left;
+    }
+    Footer {
+        height: 1;
+        background: $surface-darken-1;
+        /* Eliminamos font-size: 80%; que causa el error */
+    }
+
+    /* Opcional: reducir el espacio entre elementos del footer */
+    Footer > .footer--key {
+        padding: 0 1; 
+    }
     """
 
     BINDINGS = [
         Binding("q", "quit", "Salir"),
-        Binding("enter", "entrar_tarjeta", "Editar/Abrir"),
+        Binding("?", "mostrar_ayuda", "Ayuda"),
+        Binding("enter", "entrar_tarjeta", "Editar"),
+        # Navegación base visible en el footer
         Binding("h", "move_left", "←"),
         Binding("l", "move_right", "→"),
         Binding("j", "move_down", "↓"),
         Binding("k", "move_up", "↑"),
-        Binding("J", "move_task_down", "Mover ↓"),
-        Binding("K", "move_task_up", "Mover ↑"),
+        
+        # Acciones ocultas del footer para limpiar la interfaz
+        Binding("J", "move_task_down", "Mover ↓", show=False),
+        Binding("K", "move_task_up", "Mover ↑", show=False),
+        Binding("H", "move_task_left", "Mover ←", show=False),
+        Binding("L", "move_task_right", "Mover →", show=False),
     ]
 
     def __init__(self):
         super().__init__()
         self.columnas = ["TODO", "DOING", "DONE"]
         self.col_idx = 0
-
+    
+    def action_mostrar_paleta(self):
+        # Puedes crear un modal simple que contenga un Input
+        # y una lista de opciones ejecutables.
+        self.notify("Funcionalidad de Palette en desarrollo")
+    
     def on_mount(self) -> None:
         # Esto establece el tema de forma segura al arrancar la app
         self.theme = "ansi-light" 
@@ -197,6 +241,8 @@ class KanbanApp(App):
             if not self.screen.focused or not isinstance(self.screen.focused, TareaItem):
                 tareas[0].focus()
                 tareas[0].scroll_visible()
+    def action_mostrar_ayuda(self):
+        self.push_screen(AyudaModal())
 
     def action_entrar_tarjeta(self):
         f = self.screen.focused
@@ -210,6 +256,48 @@ class KanbanApp(App):
     def action_move_down(self):
         self._mover_foco_circular(1)
 
+    def action_move_task_left(self):
+        self._mover_entre_columnas(-1)
+
+    def action_move_task_right(self):
+        self._mover_entre_columnas(1)
+
+    def _mover_entre_columnas(self, delta):
+        focused = self.screen.focused
+        if not isinstance(focused, TareaItem):
+            return
+
+        col_actual = focused.columna
+        col_actual_idx = self.columnas.index(col_actual)
+        col_destino_idx = col_actual_idx + delta
+
+        # Verificar si el movimiento es posible
+        if 0 <= col_destino_idx < len(self.columnas):
+            col_destino = self.columnas[col_destino_idx]
+            data = cargar_datos()
+            
+            # Extraer tarea
+            tarea_id = str(focused.tid)
+            tarea_info = data[col_actual].pop(tarea_id)
+            
+            # Insertar en nueva columna
+            data[col_destino][tarea_id] = tarea_info
+            guardar_datos(data)
+            
+            # Actualizar estado y UI
+            self.col_idx = col_destino_idx
+            self.actualizar_tablero()
+            
+            # Enfocar la tarea en la nueva ubicación
+            def enfocar_en_nueva_col():
+                tareas = self.query(f"#tasks-{col_destino} TareaItem")
+                # Buscamos la tarea por ID en la nueva columna
+                tarea_nueva = next((t for t in tareas if str(t.tid) == tarea_id), None)
+                if tarea_nueva:
+                    tarea_nueva.focus()
+                    tarea_nueva.scroll_visible()
+            
+            self.call_after_refresh(enfocar_en_nueva_col)
     def action_move_up(self):
         self._mover_foco_circular(-1)
     
