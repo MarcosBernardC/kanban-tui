@@ -1,6 +1,6 @@
-#!/usr/bin/env python3 import json
-import os
+#!/usr/bin/env python3
 import json
+import os
 from datetime import datetime
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical, VerticalScroll
