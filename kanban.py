@@ -234,6 +234,24 @@ class NuevaTareaModal(ModalScreen):
             else:
                 self.action_modo_normal()
 
+class RepoCheckModal(ModalScreen):
+    # Definimos los bindings para que Textual los gestione automáticamente
+    BINDINGS = [
+        Binding("s", "confirmar", "Sí"), 
+        Binding("n", "cancelar", "No")
+    ]
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="modal-box"):
+            yield Label("No es un repositorio Git.\n¿Generar lista de tareas aquí?", id="modal-title")
+            yield Label("[b]S[/]: Sí | [b]N[/]: No")
+
+    def action_confirmar(self):
+        self.dismiss(True)
+
+    def action_cancelar(self):
+        self.dismiss(False)
+
 class KanbanApp(App):
     CSS = """
     .columna-contenedor { width: 1fr; height: 100%; border: solid $primary; margin: 0 1; }
@@ -359,9 +377,23 @@ class KanbanApp(App):
         self.notify("Funcionalidad de Palette en desarrollo")
     
     def on_mount(self) -> None:
-        # Establece el tema inicial aquí
-        self.theme = "ansi-light"
-        self.actualizar_tablero()
+        # Verificamos si estamos en un repo Git
+        if not os.path.isdir(".git"):
+            self.push_screen(RepoCheckModal(), self._handle_repo_check)
+        else:
+            self.theme = "ansi-light"
+            self.actualizar_tablero()
+
+    def _handle_repo_check(self, result: bool):
+        if result:
+            # Si dice que sí, inicializamos el archivo
+            if not os.path.exists(get_data_path()):
+                guardar_datos(DEFAULT_DATA)
+            self.theme = "ansi-light"
+            self.actualizar_tablero()
+        else:
+            # Si dice que no, salimos de la app
+            self.exit()
 
     def actualizar_tablero(self):
         data = cargar_datos()
