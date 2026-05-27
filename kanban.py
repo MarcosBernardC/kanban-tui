@@ -1,28 +1,33 @@
-#!/usr/bin/env python3
+#!/home/bernardc/dev/ActiveLabs/kanban-tui/.venv/bin/python
 import json
 import os
 from datetime import datetime
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical, VerticalScroll
-from textual.widgets import Header, Footer, Static, Label, Input
+from textual.widgets import Header, Footer, Static, Label, Input, TextArea
 from textual.screen import ModalScreen
 from textual.binding import Binding
-from textual.widgets import TextArea # Importa esto al principio
 
-DATA_FILE = "kanban.json"
+#DATA_FILE = "kanban.json"
 DEFAULT_DATA = {"next_id": 1, "TODO": {}, "DOING": {}, "DONE": {}}
 
-# --- Funciones de Datos ---
+def get_data_path():
+    # Obtiene el directorio donde vive kanban.py
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(base_dir, "kanban.json")
+    return path
+
 def cargar_datos():
-    if not os.path.exists(DATA_FILE):
-        with open(DATA_FILE, "w", encoding="utf-8") as f:
+    path = get_data_path()
+    if not os.path.exists(path):
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(DEFAULT_DATA, f, indent=4)
         return DEFAULT_DATA
-    with open(DATA_FILE, "r", encoding="utf-8") as f:
+    with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
 def guardar_datos(data):
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
+    with open(get_data_path(), "w", encoding="utf-8") as f:
         json.dump(data, f, indent=4)
 
 class TareaItem(Static):
