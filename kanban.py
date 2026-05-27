@@ -12,19 +12,29 @@ from textual.binding import Binding
 DEFAULT_DATA = {"next_id": 1, "TODO": {}, "DOING": {}, "DONE": {}}
 
 def get_data_path():
-    # Obtiene el directorio donde vive kanban.py
+    # 1. Intentar buscar en el directorio donde el usuario ejecuta el comando
+    cwd_path = os.path.join(os.getcwd(), "kanban.json")
+    if os.path.exists(cwd_path):
+        return cwd_path
+    
+    # 2. Si no existe, usar el directorio donde vive el script (comportamiento actual)
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    path = os.path.join(base_dir, "kanban.json")
-    return path
+    return os.path.join(base_dir, "kanban.json")
 
 def cargar_datos():
     path = get_data_path()
     if not os.path.exists(path):
+        # Crear archivo vacío si no existe
         with open(path, "w", encoding="utf-8") as f:
             json.dump(DEFAULT_DATA, f, indent=4)
         return DEFAULT_DATA
+    
     with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
+        try:
+            return json.load(f)
+        except json.JSONDecodeError:
+            # En caso de corrupción, retornar el default
+            return DEFAULT_DATA
 
 def guardar_datos(data):
     with open(get_data_path(), "w", encoding="utf-8") as f:
