@@ -256,6 +256,7 @@ class KanbanApp(App):
     """
 
     BINDINGS = [
+        Binding("t", "toggle_theme", "Cambiar Tema"),
         Binding("q", "quit", "Salir"),
         Binding("?", "mostrar_ayuda", "Ayuda"),
         Binding("enter", "entrar_tarjeta", "Editar"),
@@ -279,6 +280,12 @@ class KanbanApp(App):
         super().__init__()
         self.columnas = ["TODO", "DOING", "DONE"]
         self.col_idx = 0
+
+    def action_toggle_theme(self):
+        """Alterna entre ansi-light y flexoki"""
+        # Cambiamos directamente self.theme (que es la propiedad oficial de Textual)
+        self.theme = "flexoki" if self.theme == "ansi-light" else "ansi-light"
+        self.notify(f"Tema cambiado a: {self.theme}")
     
     def action_delete_task(self):
         focused = self.screen.focused
@@ -334,8 +341,8 @@ class KanbanApp(App):
         self.notify("Funcionalidad de Palette en desarrollo")
     
     def on_mount(self) -> None:
-        # Esto establece el tema de forma segura al arrancar la app
-        self.theme = "ansi-light" 
+        # Establece el tema inicial aquí
+        self.theme = "ansi-light"
         self.actualizar_tablero()
 
     def actualizar_tablero(self):
