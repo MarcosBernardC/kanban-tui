@@ -142,7 +142,7 @@ class EditarTareaModal(ModalScreen):
 
 class AyudaModal(ModalScreen):
     BINDINGS = [Binding("escape", "dismiss", "Cerrar"), Binding("q", "dismiss", "Cerrar")]
-    
+
     def compose(self) -> ComposeResult:
         with Vertical(id="modal-box"):
             yield Label("[b]PANEL DE AYUDA[/b]", id="modal-title")
@@ -152,6 +152,9 @@ class AyudaModal(ModalScreen):
                          "J/K: Reordenar tarea arriba/abajo\n\n"
                          "--- ACCIONES ---\n"
                          "Enter: Editar tarea\n"
+                         "a: Añadir tarea\n"
+                         "d: Borrar tarea\n"
+                         "t: Alternar tema (ansi-light/flexoki)\n"
                          "q: Salir de la app\n\n"
                          "--- EN MODO EDICIÓN ---\n"
                          "i: Insertar | Esc: Normal\n"
